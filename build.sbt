@@ -9,6 +9,7 @@ val akka = "2.5.13"
 val akkaStreamContrib = "0.9"
 val levelDb = "0.7"
 val levelDbJni = "1.8"
+val specs2 = "3.7"
 
 val root = Project(id = moduleName, base = file("."))
   .configs(IntegrationTest)
@@ -54,6 +55,10 @@ val root = Project(id = moduleName, base = file("."))
       "org.iq80.leveldb" % "leveldb" % levelDb
     ),
     libraryDependencies ++= Seq(
+      "joda-time" % "joda-time" % "2.9.4" % "test",
+      "org.specs2" %% "specs2-core" % specs2 % Test,
+      "org.specs2" %% "specs2-junit" % specs2 % Test,
+      "org.specs2" %% "specs2-mock" % specs2 % Test,
       "com.typesafe.akka" %% "akka-testkit" % akka % "test",
       "com.typesafe.akka" %% "akka-stream-testkit" % akka % "test"
     ))

@@ -10,16 +10,12 @@ import akka.serialization.{SerializationExtension, Serializers}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import org.slf4j.LoggerFactory
-
-import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
-
 
 object Boot extends App with UsingPostgres with UsingDatabase with ActorConfig {
 
   val log = LoggerFactory.getLogger(getClass)
-
 
   log.info("Starting DB migration")
 
