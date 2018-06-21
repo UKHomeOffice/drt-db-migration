@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 
-object Boot extends App with UsingPostgres with UsingDatabase with ActorConfig {
+object Boot extends App with SnapshotsMigration with UsingPostgres with UsingDatabase with ActorConfig {
 
   val log = LoggerFactory.getLogger(getClass)
 
@@ -32,7 +32,7 @@ object Boot extends App with UsingPostgres with UsingDatabase with ActorConfig {
     LeveldbReadJournal.Identifier)
 
   val savingToJournal = readJournal.currentPersistenceIds().map { persistenceId =>
-    log.info(s"persistenceId = $persistenceId")
+    log.info(s"journal persistenceId = $persistenceId")
     val allEvents = readJournal.currentEventsByPersistenceId(persistenceId).map { event =>
       val payload = event.event.asInstanceOf[AnyRef]
       val serializer = serialization.findSerializerFor(payload)
@@ -58,6 +58,9 @@ object Boot extends App with UsingPostgres with UsingDatabase with ActorConfig {
   }.runWith(Sink.seq)
 
   savingToJournal.onComplete { done =>
+
+    saveSnaphots(config.getString("snapshotsDir"))
+
     log.info("Work complete.")
     system.terminate()
     done

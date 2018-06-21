@@ -29,6 +29,6 @@ By default if you provide the portcode it assumes the user/password and database
 #### Run the tool
 
 ```bash
-sbt run
+SBT_OPTS="-Xms8G -Xmx8G" sbt run
 ```
 
