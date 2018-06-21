@@ -1,7 +1,5 @@
 import sbt._
 import Keys._
-//import com.github.retronym.SbtOneJar
-import spray.revolver.RevolverPlugin._
 
 val moduleName = "drt-db-migration"
 val typesafeConfig = "1.3.0"
@@ -15,7 +13,6 @@ val root = Project(id = moduleName, base = file("."))
   .configs(IntegrationTest)
   .settings(Revolver.settings)
   .settings(Defaults.itSettings: _*)
-  //.settings(SbtOneJar.oneJarSettings)
   .settings(
     name := moduleName,
     organization := "uk.gov.homeoffice",
