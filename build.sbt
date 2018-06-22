@@ -49,15 +49,16 @@ val root = Project(id = moduleName, base = file("."))
       "com.typesafe.akka" %% "akka-stream-contrib" % akkaStreamContrib,
       "com.typesafe.akka" %% "akka-slf4j" % akka,
       "org.fusesource.leveldbjni" % "leveldbjni-all" % levelDbJni,
-      "org.iq80.leveldb" % "leveldb" % levelDb
+      "org.iq80.leveldb" % "leveldb" % levelDb,
+      "com.github.scopt" %% "scopt" % "3.7.0"
     ),
     libraryDependencies ++= Seq(
-      "joda-time" % "joda-time" % "2.9.4" % "test",
+      "joda-time" % "joda-time" % "2.9.4" % Test,
       "org.specs2" %% "specs2-core" % specs2 % Test,
       "org.specs2" %% "specs2-junit" % specs2 % Test,
       "org.specs2" %% "specs2-mock" % specs2 % Test,
-      "com.typesafe.akka" %% "akka-testkit" % akka % "test",
-      "com.typesafe.akka" %% "akka-stream-testkit" % akka % "test"
+      "com.typesafe.akka" %% "akka-testkit" % akka % Test,
+      "com.typesafe.akka" %% "akka-stream-testkit" % akka % Test
     ))
 
 

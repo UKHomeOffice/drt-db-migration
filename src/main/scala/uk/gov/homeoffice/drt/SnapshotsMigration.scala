@@ -8,23 +8,32 @@ import org.slf4j.Logger
 trait SnapshotsMigration {
   this: UsingPostgres with UsingDatabase =>
   val log: Logger
+
+  lazy val dirName = config.getString("snapshotsDir")
+
   val snapshotColumnNames = List("persistence_id", "sequence_number", "created", "snapshot")
 
-  def saveSnaphots(dirName: String) = {
-
+  lazy val allSnapshotPersistentIds = {
     val allFiles = new java.io.File(dirName).listFiles.filter(_.getName.startsWith("snapshot-"))
+    allFiles.flatMap({ file => extractMetadata(file.getName)}).map{case (persistenceId: String, _, _) => persistenceId}.distinct.sorted.toSeq
+  }
+
+  def saveSnapshots(persistentId: Option[String] = None, startSequence: Long = 0L) = {
+
+    val filter = persistentId.map(id => s"snapshot-$id-").getOrElse("snapshot-")
+    val allFiles = new java.io.File(dirName).listFiles.filter(_.getName.startsWith(filter)).sortBy(f=> f.getName)
     withDatasource { implicit dataSource =>
       allFiles.foreach { file =>
-        log.info(file.getAbsolutePath)
+
 
         extractMetadata(file.getName).foreach { case (persistenceId: String, sequenceNumber: Long, created: Long) =>
+          if (sequenceNumber>= startSequence) {
+            log.info(s" ${file.getName} - $persistenceId, $sequenceNumber, $created")
+            val inputStream = new FileInputStream(file)
+            val bytes = try streamToBytes(inputStream) finally inputStream.close()
 
-          log.info((persistenceId, sequenceNumber, created).toString())
-          val inputStream = new FileInputStream(file)
-          val bytes = streamToBytes(inputStream)
-          inputStream.close()
-
-          dataToDatabase("snapshot", snapshotColumnNames, Seq(List(persistenceId, sequenceNumber, created, bytes)).toIterator)
+            dataToDatabase("snapshot", snapshotColumnNames, Seq(List(persistenceId, sequenceNumber, created, bytes)).toIterator)
+          }
         }
       }
     }

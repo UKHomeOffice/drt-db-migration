@@ -26,9 +26,28 @@ db {
 This tool is used by DRT v2 to transfer port data which is stored in a filesystem to a database.  
 By default if you provide the portcode it assumes the user/password and database name is also the same.
 
-#### Run the tool
+#### Usage 
 
 ```bash
-SBT_OPTS="-Xms8G -Xmx8G" sbt run
+SBT_OPTS="-Xms8G -Xmx8G" sbt run 
+Usage: drt-db-migration [journal|snapshot|show]
+ 
+ Command: journal [options]
+ migrates leveldb data to the journal table
+   --persistenceId <value>  persistenceId to migrate
+   --startSequence <value>  start sequence number
+ Command: snapshot [options]
+ migrates file data to the snapshot table
+   --persistenceId <value>  persistenceId to migrate
+   --startSequence <value>  start sequence number
+ Command: show
+ shows the state of play of the database and file system
+
+```
+
+```bash
+SBT_OPTS="-Xms8G -Xmx8G" sbt run journal
+SBT_OPTS="-Xms8G -Xmx8G" sbt run snapshot
+SBT_OPTS="-Xms8G -Xmx8G" sbt run show
 ```
 

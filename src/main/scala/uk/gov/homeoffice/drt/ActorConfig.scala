@@ -28,7 +28,11 @@ trait ActorConfig extends HasConfig {
     "akka.persistence.snapshot-store.loc§al.plugin-dispatcher" -> "akka.persistence.dispatchers.default-plugin-dispatcher",
     "akka.persistence.snapshot-store.local.stream-dispatcher" -> "akka.persistence.dispatchers.default-stream-dispatcher",
     "akka.actor.serializers.protobuf" -> "actors.serializers.ProtoBufSerializer",
-    "akka.actor.serialization-bindings" -> bindings
+    "akka.actor.serialization-bindings" -> bindings,
+    "akka.persistence.query.journal.leveldb.max-buffer-size" -> 100,
+    "akka.persistence.query.journal.leveldb.class" -> "akka.persistence.query.journal.leveldb.LeveldbReadJournalProvider",
+    "akka.stream.materializer.initial-input-buffer-size" -> 1,
+    "akka.stream.materializer.max-input-buffer-size" -> 1
   ).asJava)
 
 }

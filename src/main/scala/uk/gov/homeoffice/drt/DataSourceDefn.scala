@@ -1,11 +1,13 @@
 package uk.gov.homeoffice.drt
 
-import java.sql.{Connection, PreparedStatement}
+import java.sql.{Connection, PreparedStatement, ResultSet}
 
 import javax.sql.DataSource
 import org.apache.commons.dbcp.BasicDataSource
-import org.slf4j.LoggerFactory
-import uk.gov.homeoffice.drt.Boot.getClass
+import org.slf4j.Logger
+
+import scala.collection.mutable.ListBuffer
+import scala.util.Try
 
 // Copied From: http://phil-rice.github.io/scala/performance/2015/10/30/Inserting-data-to-database-tables-with-scala.html
 case class DataSourceDefn(url: String, userName: String, password: String,
@@ -22,6 +24,7 @@ trait UsingPostgres extends HasConfig {
 
 trait UsingDatabase {
   implicit def defn: DataSourceDefn
+  val log: Logger
 
   protected def createDataSource(implicit dsDefn: DataSourceDefn) = {
     val ds = new BasicDataSource()
@@ -59,6 +62,10 @@ trait UsingDatabase {
   protected def withPreparedStatement[X](sql: String, fn: (PreparedStatement) => X)(
     implicit ds: DataSource) = withConnection { connection =>
     val statement = connection.prepareStatement(sql)
-    try fn(statement) finally statement.close
+    Try (fn(statement)).recover {
+      case p: org.postgresql.util.PSQLException => log.error(s"error executing SQL ${p.getServerErrorMessage}.")
+      case t: Throwable => log.error(s"error executing SQL.", t);
+    }
+    statement.close
   }
 }
