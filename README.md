@@ -53,3 +53,17 @@ SBT_OPTS="-Xms8G -Xmx8G" sbt run snapshot
 SBT_OPTS="-Xms8G -Xmx8G" sbt run show
 ```
 
+
+###Issues with forecast-crunch-state at LHR preprod data
+When Importing LHR data from Prepord, we saw the tool run out of memory.
+I had found the following bash script helpful.
+
+```bash
+#!/bin/bash
+Echo "Go for a long coffee break"
+for i in {0..60000}
+do
+java -jar target/scala-2.11/drt-db-migration-assembly-1.0.0-SNAPSHOT.jar journal --persistenceId forecast-crunch-state --startSequence $i --endSequence $i
+done
+
+```
