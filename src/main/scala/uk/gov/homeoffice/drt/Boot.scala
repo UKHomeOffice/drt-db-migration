@@ -40,7 +40,11 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
             opt[Long](name = "startSequence")
               .optional()
               .text(s"start sequence number")
-              .action((startSequence, c) => c.copy(startSequence = Some(startSequence)))
+              .action((startSequence, c) => c.copy(startSequence = Some(startSequence))),
+              opt[Long](name = "endSequence")
+              .optional()
+              .text(s"end sequence number")
+              .action((endSequence, c) => c.copy(endSequence = Some(endSequence)))
           )
 
       )
@@ -57,7 +61,11 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
             opt[Long](name = "startSequence")
               .optional()
               .text(s"start sequence number")
-              .action((startSequence, c) => c.copy(startSequence = Some(startSequence)))
+              .action((startSequence, c) => c.copy(startSequence = Some(startSequence))),
+              opt[Long](name = "endSequence")
+              .optional()
+              .text(s"end sequence number")
+              .action((endSequence, c) => c.copy(endSequence = Some(endSequence)))
           )
       )
 
@@ -70,18 +78,19 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
   }
 
   parser.parse(args, ParsedArguments()) match {
-    case Some(ParsedArguments(Journal, None, _)) => migrateAll.onComplete { f =>
+    case Some(ParsedArguments(Journal, None, _, _)) => migrateAll.onComplete { f =>
       log.info(s"Migrated ${f.map(_.size).getOrElse(0L)} persistenceId's into journal")
       system.terminate()
     }
-    case Some(ParsedArguments(Journal, Some(id), startSequence)) => migratePersistenceIdFrom(id, startSequence.getOrElse(0L)).onComplete { f =>
+    case Some(ParsedArguments(Journal, Some(id), startSequence, endSequence)) => migratePersistenceIdFrom(id, startSequence.getOrElse(0L), endSequence.getOrElse(Long.MaxValue)).onComplete { f =>
       log.info(s"Migrated ${f.map(_.size).getOrElse(0L)} $id into journal.")
+      if (f.isFailure) log.error("Failed migration. ", f.failed.get)
       system.terminate()
     }
-    case Some(ParsedArguments(Snapshots, id, startSequence)) =>
-      saveSnapshots(id, startSequence.getOrElse(0L))
+    case Some(ParsedArguments(Snapshots, id, startSequence, endSequence)) =>
+      saveSnapshots(id, startSequence.getOrElse(0L), endSequence.getOrElse(Long.MaxValue))
       system.terminate()
-    case Some(ParsedArguments(Summary, _, _)) =>
+    case Some(ParsedArguments(Summary, _, _, _)) =>
       showSummary()
       system.terminate()
     case Some(_) =>
@@ -103,5 +112,5 @@ case object Snapshots extends Command
 
 case object Summary extends Command
 
-case class ParsedArguments(command: Command = ShowUsage, id: Option[String] = None, startSequence: Option[Long] = None)
+case class ParsedArguments(command: Command = ShowUsage, id: Option[String] = None, startSequence: Option[Long] = None, endSequence: Option[Long] = None)
 

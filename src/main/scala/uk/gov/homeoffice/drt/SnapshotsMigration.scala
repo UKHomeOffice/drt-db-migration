@@ -18,7 +18,7 @@ trait SnapshotsMigration {
     allFiles.flatMap({ file => extractMetadata(file.getName)}).map{case (persistenceId: String, _, _) => persistenceId}.distinct.sorted.toSeq
   }
 
-  def saveSnapshots(persistentId: Option[String] = None, startSequence: Long = 0L) = {
+  def saveSnapshots(persistentId: Option[String] = None, startSequence: Long = 0L, endSequence: Long = Long.MaxValue) = {
 
     val filter = persistentId.map(id => s"snapshot-$id-").getOrElse("snapshot-")
     val allFiles = new java.io.File(dirName).listFiles.filter(_.getName.startsWith(filter)).sortBy(f=> f.getName)
@@ -27,7 +27,7 @@ trait SnapshotsMigration {
 
 
         extractMetadata(file.getName).foreach { case (persistenceId: String, sequenceNumber: Long, created: Long) =>
-          if (sequenceNumber>= startSequence) {
+          if (sequenceNumber>= startSequence && sequenceNumber <=endSequence ) {
             log.info(s" ${file.getName} - $persistenceId, $sequenceNumber, $created")
             val inputStream = new FileInputStream(file)
             val bytes = try streamToBytes(inputStream) finally inputStream.close()

@@ -20,6 +20,7 @@ trait ActorConfig extends HasConfig {
     """"server.protobuf.messages.VoyageManifest.VoyageManifestMessage"""" -> "protobuf").asJava
 
   val actorConfig: Config = ConfigFactory.parseMap(Map(
+    "max-buffer-size" -> "100m",
     "akka.persistence.journal.plugin"-> "akka.persistence.journal.leveldb",
     "akka.persistence.journal.leveldb.dir" -> s"${config.getString("persistenceBaseDir")}",
     "akka.persistence.snapshot-store.plugin" -> "akka.persistence.snapshot-store.local",

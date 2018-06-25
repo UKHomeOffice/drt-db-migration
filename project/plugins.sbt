@@ -7,3 +7,5 @@ libraryDependencies += "com.trueaccord.scalapb" %% "compilerplugin" % "0.6.0-pre
 addSbtPlugin("io.spray" % "sbt-revolver" % "0.9.1")
 
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.1")
+
+addSbtPlugin("org.scala-sbt.plugins" % "sbt-onejar" % "0.8")

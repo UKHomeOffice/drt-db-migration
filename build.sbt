@@ -1,5 +1,6 @@
 import sbt._
 import Keys._
+import com.github.retronym.SbtOneJar
 
 val moduleName = "drt-db-migration"
 val typesafeConfig = "1.3.0"
@@ -13,6 +14,7 @@ val root = Project(id = moduleName, base = file("."))
   .configs(IntegrationTest)
   .settings(Revolver.settings)
   .settings(Defaults.itSettings: _*)
+  .settings(SbtOneJar.oneJarSettings)
   .settings(
     name := moduleName,
     organization := "uk.gov.homeoffice",
@@ -78,10 +80,20 @@ publishArtifact in(Test, packageSrc) := true
 javaOptions in run += "-Djdk.logging.allowStackWalkSearch=true"
 
 assemblyMergeStrategy in assembly := {
+  case "overview.html" => MergeStrategy.discard
+  case PathList("META-INF", "spring.tooling") => MergeStrategy.first
+  case PathList("META-INF", "spring.factories") => MergeStrategy.first
+  case PathList(p @ _*) if p.last endsWith ".properties" => MergeStrategy.concat
+  case PathList("ArgumentsProcessor.class", "MatchersBinder.class") => MergeStrategy.first
+  case PathList("org", "scalactic", _*) => MergeStrategy.first
   case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
-  case PathList(ps@_*) if ps.last endsWith ".java" => MergeStrategy.discard
-  case _ => MergeStrategy.first
+  case PathList(ps @ _*) if ps.last endsWith ".java" => MergeStrategy.discard
+  case PathList("org", "mockito", _*) => MergeStrategy.discard
+  case x =>
+    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    oldStrategy(x)
 }
+
 fork in run := true
 
 mainClass in(Compile, run) := Some("uk.gov.homeoffice.drt.Boot")

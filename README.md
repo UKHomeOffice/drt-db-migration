@@ -36,10 +36,12 @@ Usage: drt-db-migration [journal|snapshot|show]
  migrates leveldb data to the journal table
    --persistenceId <value>  persistenceId to migrate
    --startSequence <value>  start sequence number
+   --endSequence   <value>  end sequence number
  Command: snapshot [options]
  migrates file data to the snapshot table
    --persistenceId <value>  persistenceId to migrate
    --startSequence <value>  start sequence number
+   --endSequence   <value>  end sequence number
  Command: show
  shows the state of play of the database and file system
 
