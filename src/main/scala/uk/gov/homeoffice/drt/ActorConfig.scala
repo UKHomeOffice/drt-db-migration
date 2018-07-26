@@ -33,7 +33,12 @@ trait ActorConfig extends HasConfig {
     "akka.persistence.query.journal.leveldb.max-buffer-size" -> 100,
     "akka.persistence.query.journal.leveldb.class" -> "akka.persistence.query.journal.leveldb.LeveldbReadJournalProvider",
     "akka.stream.materializer.initial-input-buffer-size" -> 1,
-    "akka.stream.materializer.max-input-buffer-size" -> 1
+    "akka.stream.materializer.max-input-buffer-size" -> 1,
+    "akka.persistence.query.journal.leveldb.class" -> "akka.persistence.query.journal.leveldb.LeveldbReadJournalProvider",
+    "akka.persistence.query.journal.leveldb.write-plugin" -> "",
+    "akka.persistence.query.journal.leveldb.refresh-interval" -> "3s",
+    "akka.persistence.query.journal.leveldb.max-buffer-size" -> "100"
+
   ).asJava)
 
 }

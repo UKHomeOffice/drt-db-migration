@@ -4,7 +4,7 @@ import com.github.retronym.SbtOneJar
 
 val moduleName = "drt-db-migration"
 val typesafeConfig = "1.3.0"
-val akka = "2.5.13"
+val akka = "2.5.14"
 val akkaStreamContrib = "0.9"
 val levelDb = "0.7"
 val levelDbJni = "1.8"

@@ -58,6 +58,8 @@ SBT_OPTS="-Xms8G -Xmx8G" sbt run show
 When Importing LHR data from Prepord, we saw the tool run out of memory.
 I had found the following bash script helpful.
 
+You will need to create an assembly jar by running `sbt assembly`. 
+
 ```bash
 #!/bin/bash
 Echo "Go for a long coffee break"
@@ -67,3 +69,5 @@ java -jar target/scala-2.11/drt-db-migration-assembly-1.0.0-SNAPSHOT.jar journal
 done
 
 ```
+
+**Update:** The latest version of akka "2.5.14" - seems to perform much better and have better docs for querying the leveldb journals.
