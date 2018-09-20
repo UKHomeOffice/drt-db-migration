@@ -17,7 +17,10 @@ trait ActorConfig extends HasConfig {
     """"server.protobuf.messages.VoyageManifest.VoyageManifestStateSnapshotMessage"""" -> "protobuf",
     """"server.protobuf.messages.VoyageManifest.VoyageManifestLatestFileNameMessage"""" -> "protobuf",
     """"server.protobuf.messages.VoyageManifest.VoyageManifestsMessage"""" -> "protobuf",
-    """"server.protobuf.messages.VoyageManifest.VoyageManifestMessage"""" -> "protobuf").asJava
+    """"server.protobuf.messages.VoyageManifest.VoyageManifestMessage"""" -> "protobuf",
+    """"server.protobuf.messages.Alert.AlertSnapshotMessage"""" -> "protobuf",
+    """"server.protobuf.messages.Alert.Alert"""" -> "protobuf"
+    ).asJava
 
   val actorConfig: Config = ConfigFactory.parseMap(Map(
     "max-buffer-size" -> "100m",

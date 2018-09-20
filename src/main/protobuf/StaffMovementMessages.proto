@@ -1,3 +1,5 @@
+syntax = "proto2";
+
 package server.protobuf.messages;
 
 message StaffMovementsMessage {
@@ -17,4 +19,5 @@ message StaffMovementMessage {
     optional string uUID = 5;
     optional string queueName = 6;
     optional int64 createdAt = 7;
+    optional string createdBy = 8;
 }
