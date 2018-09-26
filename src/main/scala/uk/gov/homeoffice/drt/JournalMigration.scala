@@ -32,7 +32,7 @@ trait JournalMigration {
   def migratePersistenceIdFrom(persistenceId: String, startSequence: Long = 0L, endSequence: Long = Long.MaxValue) = {
 
     log.info(s"Migrating $persistenceId with start sequence $startSequence into journal.")
-    readJournal.eventsByPersistenceId(persistenceId, fromSequenceNr = startSequence, toSequenceNr = endSequence)
+    readJournal.currentEventsByPersistenceId(persistenceId, fromSequenceNr = startSequence, toSequenceNr = endSequence)
       .map { event =>
         log.info(s"Reading a persistent-id $persistenceId into Journal ${event.sequenceNr}")
         val payload = event.event.asInstanceOf[AnyRef]
