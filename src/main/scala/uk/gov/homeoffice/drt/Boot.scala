@@ -80,11 +80,13 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
   parser.parse(args, ParsedArguments()) match {
     case Some(ParsedArguments(Journal, None, _, _)) => migrateAll.onComplete { f =>
       log.info(s"Migrated ${f.map(_.size).getOrElse(0L)} persistenceId's into journal")
+      closeDatasource
       system.terminate()
     }
     case Some(ParsedArguments(Journal, Some(id), startSequence, endSequence)) => migratePersistenceIdFrom(id, startSequence.getOrElse(0L), endSequence.getOrElse(Long.MaxValue)).onComplete { f =>
       log.info(s"Migrated ${f.map(_.size).getOrElse(0L)} $id into journal.")
       if (f.isFailure) log.error("Failed migration. ", f.failed.get)
+      closeDatasource
       system.terminate()
     }
     case Some(ParsedArguments(Snapshots, id, startSequence, endSequence)) =>
@@ -92,12 +94,15 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
       system.terminate()
     case Some(ParsedArguments(Summary, _, _, _)) =>
       showSummary()
+      closeDatasource
       system.terminate()
     case Some(_) =>
       parser.showUsage()
+      closeDatasource
       system.terminate()
     case None =>
       log.info("terminate")
+      closeDatasource
       sys.exit(0)
   }
 }

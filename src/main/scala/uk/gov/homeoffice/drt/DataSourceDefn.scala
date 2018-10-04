@@ -1,18 +1,15 @@
 package uk.gov.homeoffice.drt
 
-import java.sql.{Connection, PreparedStatement, ResultSet}
-
+import java.sql.{Connection, PreparedStatement}
 import javax.sql.DataSource
 import org.apache.commons.dbcp.BasicDataSource
 import org.slf4j.Logger
-
-import scala.collection.mutable.ListBuffer
-import scala.util.Try
+import scala.util.{Success, Try}
 
 // Copied From: http://phil-rice.github.io/scala/performance/2015/10/30/Inserting-data-to-database-tables-with-scala.html
 case class DataSourceDefn(url: String, userName: String, password: String,
                           classDriveName: String = "org.postgresql.Driver",
-                          maxConnections: Integer = -1)
+                          maxConnections: Integer = 10)
 
 trait UsingPostgres extends HasConfig {
   implicit lazy val defn: DataSourceDefn =
@@ -49,8 +46,22 @@ trait UsingDatabase {
   }
 
   protected def withDatasource[X](fn: (DataSource) => X)(implicit defn: DataSourceDefn) = {
-    val ds = createDataSource
-    try fn(ds) finally ds.close
+    if (DataSource.ds == null) {
+      synchronized {
+        if (DataSource.ds == null)
+          DataSource.ds = createDataSource
+      }
+    }
+    fn(DataSource.ds)
+  }
+
+  protected def closeDatasource {
+    synchronized {
+      if (DataSource.ds != null) {
+        DataSource.ds.close
+        DataSource.ds = null
+      }
+    }
   }
 
 
@@ -60,12 +71,20 @@ trait UsingDatabase {
   }
 
   protected def withPreparedStatement[X](sql: String, fn: (PreparedStatement) => X)(
-    implicit ds: DataSource) = withConnection { connection =>
+    implicit ds: DataSource): Option[X] = withConnection { connection =>
     val statement = connection.prepareStatement(sql)
-    Try (fn(statement)).recover {
+    val tryFunction = Try (fn(statement)).recover {
       case p: org.postgresql.util.PSQLException => log.error(s"error executing SQL ${p.getServerErrorMessage}.")
       case t: Throwable => log.error(s"error executing SQL.", t);
     }
     statement.close
+    tryFunction match {
+      case Success(a: X) => Option(a)
+      case _ => None
+    }
   }
+}
+
+object DataSource {
+  var ds: BasicDataSource = null
 }

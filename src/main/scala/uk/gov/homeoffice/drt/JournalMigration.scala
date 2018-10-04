@@ -1,16 +1,14 @@
 package uk.gov.homeoffice.drt
 
-import actors.serializers.ProtoBufSerializer
 import akka.actor.ActorSystem
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.serialization.{MessageFormats => mf}
 import akka.protobuf.ByteString
 import akka.serialization.Serializers
-import akka.stream.{ActorAttributes, ActorMaterializer, Supervision}
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import org.slf4j.Logger
 import uk.gov.homeoffice.drt.Boot.serialization
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
@@ -55,6 +53,16 @@ trait JournalMigration {
 
   }
 
+  def getStartSequence(id: String) = {
+    withDatasource[Long](implicit dataSource => {
+      val sql = s"select max(sequence_number) from journal where persistence_id = '$id'"
+      withPreparedStatement[Long](sql, { implicit statement =>
+        val rs = statement.executeQuery()
+        if (rs.next()) rs.getInt(1).toLong else 0L
+      }).getOrElse(0L)
+    })
+  }
+
   def migrateAll = {
 
     val ids = Await.result(allJournalPersistentIds, Duration.Inf)
@@ -62,7 +70,8 @@ trait JournalMigration {
     Future.sequence {
       for {
         id <- ids
-      } yield migratePersistenceIdFrom(id)
+        startSeq = getStartSequence(id)
+      } yield migratePersistenceIdFrom(id, startSeq)
     }
   }
 

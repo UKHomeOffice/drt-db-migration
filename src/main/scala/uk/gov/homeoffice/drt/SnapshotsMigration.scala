@@ -21,7 +21,7 @@ trait SnapshotsMigration {
   def saveSnapshots(persistentId: Option[String] = None, startSequence: Long = 0L, endSequence: Long = Long.MaxValue) = {
 
     val filter = persistentId.map(id => s"snapshot-$id-").getOrElse("snapshot-")
-    val allFiles = new java.io.File(dirName).listFiles.filter(_.getName.startsWith(filter)).sortBy(f=> f.getName)
+    val allFiles = new java.io.File(dirName).listFiles.filter(_.getName.startsWith(filter)).sortBy(f=> f.getName).reverse
     withDatasource { implicit dataSource =>
       allFiles.foreach { file =>
 
