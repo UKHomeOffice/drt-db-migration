@@ -7,10 +7,9 @@ import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.serialization.SerializationExtension
 import akka.stream.ActorMaterializer
 import org.slf4j.LoggerFactory
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContextExecutor}
+import scala.concurrent.ExecutionContextExecutor
 
-object Boot extends App with JournalMigration with SnapshotsMigration with ShowSummary with UsingPostgres with UsingDatabase with ActorConfig {
+object Boot extends App with JournalMigration with SnapshotsMigration with ShowSummary with UsingPostgres with UsingDatabase with ActorConfig with RecreateTables {
   val log = LoggerFactory.getLogger(getClass)
 
   log.info(s"Starting DB migration ${config.getString("portcode")} at persistenceBaseDir '${config.getString("persistenceBaseDir")}'.")
@@ -41,7 +40,7 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
               .optional()
               .text(s"start sequence number")
               .action((startSequence, c) => c.copy(startSequence = Some(startSequence))),
-              opt[Long](name = "endSequence")
+            opt[Long](name = "endSequence")
               .optional()
               .text(s"end sequence number")
               .action((endSequence, c) => c.copy(endSequence = Some(endSequence)))
@@ -62,12 +61,16 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
               .optional()
               .text(s"start sequence number")
               .action((startSequence, c) => c.copy(startSequence = Some(startSequence))),
-              opt[Long](name = "endSequence")
+            opt[Long](name = "endSequence")
               .optional()
               .text(s"end sequence number")
               .action((endSequence, c) => c.copy(endSequence = Some(endSequence)))
           )
       )
+
+    cmd("recreate")
+      .action((_, c) => c.copy(command = RecreateDB))
+      .text(s"recreate the database tables")
 
     cmd("show")
       .action((_, c) => c.copy(command = Summary))
@@ -91,6 +94,10 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
     }
     case Some(ParsedArguments(Snapshots, id, startSequence, endSequence)) =>
       saveSnapshots(id, startSequence.getOrElse(0L), endSequence.getOrElse(Long.MaxValue))
+      system.terminate()
+    case Some(ParsedArguments(RecreateDB, _, _, _)) =>
+      dropAndRecreateTables
+      closeDatasource
       system.terminate()
     case Some(ParsedArguments(Summary, _, _, _)) =>
       showSummary()
@@ -116,6 +123,8 @@ case object Journal extends Command
 case object Snapshots extends Command
 
 case object Summary extends Command
+
+case object RecreateDB extends Command
 
 case class ParsedArguments(command: Command = ShowUsage, id: Option[String] = None, startSequence: Option[Long] = None, endSequence: Option[Long] = None)
 
