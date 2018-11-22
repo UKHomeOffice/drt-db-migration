@@ -6,6 +6,9 @@ import java.sql.ResultSet
 import akka.persistence.serialization.streamToBytes
 import org.slf4j.Logger
 
+import scala.collection.immutable.Seq
+import scala.util.Try
+
 trait SnapshotsMigration {
   this: UsingPostgres with UsingDatabase =>
   val log: Logger
@@ -30,19 +33,19 @@ trait SnapshotsMigration {
     withDatasource { implicit dataSource =>
       allFiles.foreach { file =>
 
-
         extractMetadata(file.getName).foreach { case (persistenceId: String, sequenceNumber: Long, created: Long) =>
-          getSavedSequenceIds(persistenceId).foreach {
-            savedSoFar =>
-              if (!savedSoFar.contains(sequenceNumber)) {
-                log.info(s" ${file.getName} - $persistenceId, $sequenceNumber, $created")
-                val inputStream = new FileInputStream(file)
-                val bytes = try streamToBytes(inputStream) finally inputStream.close()
-                log.info(s"Saving $sequenceNumber.")
-                dataToDatabase("snapshot", snapshotColumnNames, Seq(List(persistenceId, sequenceNumber, created, bytes)).toIterator)
-              } else log.info(s"Skipping $sequenceNumber as we've already saved it.")
 
-          }
+          var savedSoFar = Try {
+            getSavedSequenceIds(persistenceId).getOrElse(List())
+          }.toOption.getOrElse(List())
+
+          if (!savedSoFar.contains(sequenceNumber)) {
+            log.info(s" ${file.getName} - $persistenceId, $sequenceNumber, $created")
+            val inputStream = new FileInputStream(file)
+            val bytes = try streamToBytes(inputStream) finally inputStream.close()
+            log.info(s"Saving $sequenceNumber.")
+            dataToDatabase("snapshot", snapshotColumnNames, Seq(List(persistenceId, sequenceNumber, created, bytes)).toIterator)
+          } else log.info(s"Skipping $sequenceNumber as we've already saved it.")
 
         }
       }
@@ -51,8 +54,13 @@ trait SnapshotsMigration {
 
   def resultSetToListOfSequenceNumbers(rs: ResultSet): List[Long] = {
     rs.next()
-    if (rs.isLast)
-      rs.getLong(1) :: Nil
+    if (rs.isLast) {
+      val sn = rs.getLong(1)
+      if (rs.wasNull())
+        Nil
+      else
+        sn :: Nil
+    }
     else {
       val sequenceNumber = rs.getLong(1)
       sequenceNumber :: resultSetToListOfSequenceNumbers(rs)
