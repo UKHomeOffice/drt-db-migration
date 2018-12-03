@@ -27,52 +27,73 @@ trait JournalMigration {
     readJournal.currentPersistenceIds().runWith(Sink.seq)
   }
 
-  def migratePersistenceIdFrom(persistenceId: String, startSequence: Long = 0L, endSequence: Long = Long.MaxValue) = {
+  def migratePersistenceIdFrom(persistenceId: String, startSequence: Long = 0L, endSequence: Long = Long.MaxValue): Int = {
+    log.info(s"Migrating $persistenceId from $startSequence")
+    val events = readJournal.currentEventsByPersistenceId(persistenceId, fromSequenceNr = startSequence, toSequenceNr = endSequence)
+    withDatasource { implicit dataSource =>
+      val eventualMaxSeqNr = events.map(_.sequenceNr).runWith(Sink.seq).map {
+        case empty if empty.isEmpty => 0
+        case nonEmpty if nonEmpty.nonEmpty => nonEmpty.length
+      }
+      val maxSeqNr = Await.result(eventualMaxSeqNr, 10 minutes)
+      log.info(s"$maxSeqNr entries to migrate")
 
-    log.info(s"Migrating $persistenceId with start sequence $startSequence into journal.")
-    readJournal.currentEventsByPersistenceId(persistenceId, fromSequenceNr = startSequence, toSequenceNr = endSequence)
-      .map { event =>
-        log.info(s"Reading a persistent-id $persistenceId into Journal ${event.sequenceNr}")
-        val payload = event.event.asInstanceOf[AnyRef]
-        val serializer = serialization.findSerializerFor(payload)
-        val payloadBuilder = mf.PersistentPayload.newBuilder()
-        val ms = Serializers.manifestFor(serializer, payload)
-        if (ms.nonEmpty) payloadBuilder.setPayloadManifest(ByteString.copyFromUtf8(ms))
-        payloadBuilder.setPayload(ByteString.copyFrom(serializer.toBinary(payload)))
-        payloadBuilder.setSerializerId(serializer.identifier)
-        val msgBuilder = mf.PersistentMessage.newBuilder
-        msgBuilder.setPersistenceId(event.persistenceId)
-        msgBuilder.setPayload(payloadBuilder)
-        msgBuilder.setSequenceNr(event.sequenceNr)
-        msgBuilder.setManifest(ms)
+      val eventualInts: Future[Int] = events
+        .grouped(5000)
+        .fold(0) {
+          case (counter, eventEnvelopes) =>
+            val seq = eventEnvelopes.map(eventEnvelope => {
+              val payload = eventEnvelope.event.asInstanceOf[AnyRef]
+              val serializer = serialization.findSerializerFor(payload)
+              val payloadBuilder = mf.PersistentPayload.newBuilder()
 
-        withDatasource { implicit dataSource =>
-          dataToDatabase("journal", columnNames, Seq(List(event.persistenceId, event.sequenceNr, false, null, msgBuilder.build().toByteArray)).toIterator)
+              val ms = Serializers.manifestFor(serializer, payload)
+              if (ms.nonEmpty) payloadBuilder.setPayloadManifest(ByteString.copyFromUtf8(ms))
+              payloadBuilder.setPayload(ByteString.copyFrom(serializer.toBinary(payload)))
+              payloadBuilder.setSerializerId(serializer.identifier)
+
+              val msgBuilder = mf.PersistentMessage.newBuilder
+              msgBuilder.setPersistenceId(eventEnvelope.persistenceId)
+              msgBuilder.setPayload(payloadBuilder)
+              msgBuilder.setSequenceNr(eventEnvelope.sequenceNr)
+              msgBuilder.setManifest(ms)
+
+              List(eventEnvelope.persistenceId, eventEnvelope.sequenceNr, false, null, msgBuilder.build().toByteArray)
+            })
+            dataToDatabase("journal", columnNames, seq.toIterator)
+            val newCounter = counter + seq.length
+            val progress = (newCounter.toDouble / maxSeqNr) * 100
+            log.info(s"Written $newCounter / $maxSeqNr entries to $persistenceId (${progress.toInt}%)")
+            newCounter
         }
-      }.runWith(Sink.seq)
-
+        .runWith(Sink.seq)
+        .map(_.sum)
+      Await.result(eventualInts, 24 hours)
+    }
   }
 
-  def getStartSequence(id: String) = {
-    withDatasource[Long](implicit dataSource => {
+  def getStartSequence(id: String): Long = {
+    withDatasource(implicit dataSource => {
       val sql = s"select max(sequence_number) from journal where persistence_id = '$id'"
       withPreparedStatement[Long](sql, { implicit statement =>
         val rs = statement.executeQuery()
-        if (rs.next()) rs.getInt(1).toLong else 0L
+        if (rs.next()) {
+          val maxSequenceId = rs.getInt(1).toLong
+          if (maxSequenceId > 0) maxSequenceId + 1 else 0L
+        } else 0L
       }).getOrElse(0L)
     })
   }
 
-  def migrateAll = {
-
+  def migrateAll: Int = {
     val ids = Await.result(allJournalPersistentIds, Duration.Inf)
 
-    Future.sequence {
-      for {
-        id <- ids
-        startSeq = getStartSequence(id)
-      } yield migratePersistenceIdFrom(id, startSeq)
-    }
+    val migratedById = for {
+      id <- ids
+      startSeq = getStartSequence(id)
+    } yield migratePersistenceIdFrom(id, startSeq)
+
+    migratedById.sum
   }
 
 
