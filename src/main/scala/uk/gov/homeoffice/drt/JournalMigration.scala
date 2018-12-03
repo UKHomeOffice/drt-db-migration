@@ -77,7 +77,10 @@ trait JournalMigration {
       val sql = s"select max(sequence_number) from journal where persistence_id = '$id'"
       withPreparedStatement[Long](sql, { implicit statement =>
         val rs = statement.executeQuery()
-        if (rs.next()) rs.getInt(1).toLong + 1 else 0L
+        if (rs.next()) {
+          val maxSequenceId = rs.getInt(1).toLong
+          if (maxSequenceId > 0) maxSequenceId + 1 else 0L
+        } else 0L
       }).getOrElse(0L)
     })
   }
