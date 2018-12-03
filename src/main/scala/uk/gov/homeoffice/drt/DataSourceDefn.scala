@@ -23,7 +23,7 @@ trait UsingDatabase {
   implicit def defn: DataSourceDefn
   val log: Logger
 
-  protected def createDataSource(implicit dsDefn: DataSourceDefn) = {
+  protected def createDataSource(implicit dsDefn: DataSourceDefn): BasicDataSource = {
     val ds = new BasicDataSource()
     ds.setDriverClassName(dsDefn.classDriveName)
     ds.setUrl(dsDefn.url)
@@ -33,11 +33,11 @@ trait UsingDatabase {
     ds
   }
 
-  protected def dataToDatabase(tableName: String, columnNames: List[String], data: Iterator[List[Any]])(implicit ds: DataSource) = {
+  protected def dataToDatabase(tableName: String, columnNames: List[String], data: Iterator[List[Any]])(implicit ds: DataSource): Unit = {
     val columnsWithCommas = columnNames.mkString(",")
     val questionMarks = columnNames.map(_ => "?").mkString(",")
     val sql = s"insert into $tableName ($columnsWithCommas) values ($questionMarks)"
-    for ((list, lineNo) <- data.zipWithIndex)
+    for ((list, _) <- data.zipWithIndex)
       withPreparedStatement(sql, { implicit statement =>
         for ((value, index) <- list.zipWithIndex)
           statement.setObject(index + 1, value)
@@ -45,7 +45,7 @@ trait UsingDatabase {
       })
   }
 
-  protected def withDatasource[X](fn: (DataSource) => X)(implicit defn: DataSourceDefn) = {
+  protected def withDatasource[X](fn: DataSource => X)(implicit defn: DataSourceDefn): X = {
     if (DataSource.ds == null) {
       synchronized {
         if (DataSource.ds == null)
@@ -55,7 +55,7 @@ trait UsingDatabase {
     fn(DataSource.ds)
   }
 
-  protected def closeDatasource {
+  protected def closeDatasource() {
     synchronized {
       if (DataSource.ds != null) {
         DataSource.ds.close
@@ -65,19 +65,19 @@ trait UsingDatabase {
   }
 
 
-  protected def withConnection[X](fn: (Connection => X))(implicit ds: DataSource) = {
+  protected def withConnection[X](fn: Connection => X)(implicit ds: DataSource) = {
     val c = ds.getConnection
     try fn(c) finally c.close
   }
 
-  protected def withPreparedStatement[X](sql: String, fn: (PreparedStatement) => X)(
+  protected def withPreparedStatement[X](sql: String, fn: PreparedStatement => X)(
     implicit ds: DataSource): Option[X] = withConnection { connection =>
     val statement = connection.prepareStatement(sql)
     val tryFunction = Try (fn(statement)).recover {
       case p: org.postgresql.util.PSQLException => log.error(s"error executing SQL ${p.getServerErrorMessage}.")
       case t: Throwable => log.error(s"error executing SQL.", t);
     }
-    statement.close
+    statement.close()
     tryFunction match {
       case Success(a: X) => Option(a)
       case _ => None

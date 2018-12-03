@@ -81,35 +81,34 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
   }
 
   parser.parse(args, ParsedArguments()) match {
-    case Some(ParsedArguments(Journal, None, _, _)) => migrateAll.onComplete { f =>
-      log.info(s"Migrated ${f.map(_.size).getOrElse(0L)} persistenceId's into journal")
-      closeDatasource
+    case Some(ParsedArguments(Journal, None, _, _)) =>
+      val totalMigrated = migrateAll
+      log.info(s"$totalMigrated migrated.")
+      closeDatasource()
       system.terminate()
-    }
-    case Some(ParsedArguments(Journal, Some(id), startSequence, endSequence)) => migratePersistenceIdFrom(id, startSequence.getOrElse(0L), endSequence.getOrElse(Long.MaxValue)).onComplete { f =>
-      log.info(s"Migrated ${f.map(_.size).getOrElse(0L)} $id into journal.")
-      if (f.isFailure) log.error("Failed migration. ", f.failed.get)
-      closeDatasource
+    case Some(ParsedArguments(Journal, Some(id), startSequence, endSequence)) =>
+      val totalMigrated = migratePersistenceIdFrom(id, startSequence.getOrElse(0L), endSequence.getOrElse(Long.MaxValue))
+      log.info(s"$totalMigrated migrated.")
+      closeDatasource()
       system.terminate()
-    }
     case Some(ParsedArguments(Snapshots, id, startSequence, endSequence)) =>
       saveSnapshots(id, startSequence.getOrElse(0L), endSequence.getOrElse(Long.MaxValue))
       system.terminate()
     case Some(ParsedArguments(RecreateDB, _, _, _)) =>
-      dropAndRecreateTables
-      closeDatasource
+      dropAndRecreateTables()
+      closeDatasource()
       system.terminate()
     case Some(ParsedArguments(Summary, _, _, _)) =>
       showSummary()
-      closeDatasource
+      closeDatasource()
       system.terminate()
     case Some(_) =>
       parser.showUsage()
-      closeDatasource
+      closeDatasource()
       system.terminate()
     case None =>
       log.info("terminate")
-      closeDatasource
+      closeDatasource()
       sys.exit(0)
   }
 }
