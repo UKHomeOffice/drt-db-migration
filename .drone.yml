@@ -47,8 +47,7 @@ pipeline:
       - latest
     when:
       event: push
-      branch:
-        - docker
+      branch: docker
 
 
 
