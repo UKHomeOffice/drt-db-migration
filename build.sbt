@@ -2,6 +2,7 @@ import sbt._
 import Keys._
 import com.github.retronym.SbtOneJar
 
+
 val moduleName = "drt-db-migration"
 val typesafeConfig = "1.3.0"
 val akka = "2.5.14"
@@ -9,6 +10,10 @@ val akkaStreamContrib = "0.9"
 val levelDb = "0.7"
 val levelDbJni = "1.8"
 val specs2 = "3.7"
+// Docker Plugin§
+enablePlugins(DockerPlugin)
+// enabled for Alpine JVM docker image compatibility
+enablePlugins(AshScriptPlugin)
 
 val root = Project(id = moduleName, base = file("."))
   .configs(IntegrationTest)
@@ -97,3 +102,4 @@ assemblyMergeStrategy in assembly := {
 fork in run := true
 
 mainClass in(Compile, run) := Some("uk.gov.homeoffice.drt.Boot")
+
