@@ -1,4 +1,5 @@
 pipeline:
+
    drone_s3_cache_pull:
      image: quay.io/ukhomeofficedigital/drone-s3cache:v0.2.0
      drone_s3_cache_mode: "pull"
@@ -11,7 +12,7 @@ pipeline:
      image: quay.io/ukhomeofficedigital/scala-sbt-nodejs
      commands:
        - /root/entrypoint.sh
-       - sbt --error test docker:stage
+       - sbt  docker:stage
      environment:
        - ARTIFACTORY_USERNAME=drt_ci
      secrets:
@@ -20,14 +21,13 @@ pipeline:
        event:
          - push
        branch:
-         - master
+         - docker
 
    drone_s3_cache_push:
      image: quay.io/ukhomeofficedigital/drone-s3cache:v0.2.0
      drone_s3_cache_folders:
        - ./.ivy2
        - ./.sbt/boot
-
      drone_s3_cache_mode: "push"
      secrets:
        - DRONE_S3_CACHE_AWS_ACCESS_KEY_ID
