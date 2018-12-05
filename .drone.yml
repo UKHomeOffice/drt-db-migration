@@ -1,12 +1,12 @@
 pipeline:
 
-   drone_s3_cache_pull:
-     image: quay.io/ukhomeofficedigital/drone-s3cache:v0.2.0
-     drone_s3_cache_mode: "pull"
-     secrets:
-       - DRONE_S3_CACHE_AWS_ACCESS_KEY_ID
-       - DRONE_S3_CACHE_AWS_SECRET_ACCESS_KEY
-       - DRONE_S3_CACHE_BUCKET_NAME
+    #   drone_s3_cache_pull:
+    #     image: quay.io/ukhomeofficedigital/drone-s3cache:v0.2.0
+    #  drone_s3_cache_mode: "pull"
+    #  secrets:
+    #    - DRONE_S3_CACHE_AWS_ACCESS_KEY_ID
+    #    - DRONE_S3_CACHE_AWS_SECRET_ACCESS_KEY
+    #    - DRONE_S3_CACHE_BUCKET_NAME
 
    build:
      image: quay.io/ukhomeofficedigital/scala-sbt-nodejs
@@ -23,18 +23,17 @@ pipeline:
        branch:
          - docker
 
-   drone_s3_cache_push:
-     image: quay.io/ukhomeofficedigital/drone-s3cache:v0.2.0
-     drone_s3_cache_folders:
-       - ./.ivy2
-       - ./.sbt/boot
-     drone_s3_cache_mode: "push"
-     secrets:
-       - DRONE_S3_CACHE_AWS_ACCESS_KEY_ID
-       - DRONE_S3_CACHE_AWS_SECRET_ACCESS_KEY
-       - DRONE_S3_CACHE_BUCKET_NAME
-
-
+           #   drone_s3_cache_push:
+           # image: quay.io/ukhomeofficedigital/drone-s3cache:v0.2.0
+           #drone_s3_cache_folders:
+           # - ./.ivy2
+           #- ./.sbt/boot
+           #drone_s3_cache_mode: "push"
+           #secrets:
+           #- DRONE_S3_CACHE_AWS_ACCESS_KEY_ID
+           #- DRONE_S3_CACHE_AWS_SECRET_ACCESS_KEY
+           #- DRONE_S3_CACHE_BUCKET_NAME
+         
   build_docker:
     environment:
       - DOCKER_USERNAME=drt_ci
