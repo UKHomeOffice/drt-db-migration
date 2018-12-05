@@ -14,18 +14,3 @@ pipeline:
          - push
        branch:
          - docker
-
-         
-  build_docker:
-    environment:
-      - DOCKER_USERNAME=drt_ci
-    image: quay.io/ukhomeofficedigital/drone-docker
-    registry: docker.digital.homeoffice.gov.uk
-    repo: docker.digital.homeoffice.gov.uk/drt-db-migration
-    #    secrets: [ docker_password ]
-    tags:
-      - ${DRONE_BUILD_NUMBER}
-      - latest
-    when:
-      event: push
-      branch: docker
