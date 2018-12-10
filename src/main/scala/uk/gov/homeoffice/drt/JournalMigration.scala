@@ -31,15 +31,18 @@ trait JournalMigration {
     log.info(s"Migrating $persistenceId from $startSequence")
     val events = readJournal.currentEventsByPersistenceId(persistenceId, fromSequenceNr = startSequence, toSequenceNr = endSequence)
     withDatasource { implicit dataSource =>
-      val eventualMaxSeqNr = events.map(_.sequenceNr).runWith(Sink.seq).map {
+      val eventualMaxSeqNr = if (persistenceId == "forecast-crunch-state") Future(-1)
+      else events.map(_.sequenceNr).runWith(Sink.seq).map {
         case empty if empty.isEmpty => 0
         case nonEmpty if nonEmpty.nonEmpty => nonEmpty.length
       }
       val maxSeqNr = Await.result(eventualMaxSeqNr, 10 minutes)
       log.info(s"$maxSeqNr entries to migrate")
 
+      val groupSize = if (persistenceId.contains("forecast")) 10 else 5000
+
       val eventualInts: Future[Int] = events
-        .grouped(5000)
+        .grouped(groupSize)
         .fold(0) {
           case (counter, eventEnvelopes) =>
             val seq = eventEnvelopes.map(eventEnvelope => {
@@ -63,7 +66,8 @@ trait JournalMigration {
             dataToDatabase("journal", columnNames, seq.toIterator)
             val newCounter = counter + seq.length
             val progress = (newCounter.toDouble / maxSeqNr) * 100
-            log.info(s"Written $newCounter / $maxSeqNr entries to $persistenceId (${progress.toInt}%)")
+            val progressIndicator = if (persistenceId != "forecast-crunch-state") s"(${progress.toInt}%)" else "(n/a)"
+            log.info(s"Written $newCounter / $maxSeqNr entries to $persistenceId $progressIndicator")
             newCounter
         }
         .runWith(Sink.seq)
@@ -87,6 +91,8 @@ trait JournalMigration {
 
   def migrateAll: Int = {
     val ids = Await.result(allJournalPersistentIds, Duration.Inf)
+
+    log.info(s"persistence ids to be migrated:\n${ids.sorted.mkString("\n")}")
 
     val migratedById = for {
       id <- ids
