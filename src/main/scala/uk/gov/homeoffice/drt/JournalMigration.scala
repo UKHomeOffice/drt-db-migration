@@ -39,13 +39,13 @@ trait JournalMigration {
       val maxSeqNr = Await.result(eventualMaxSeqNr, 10 minutes)
       log.info(s"$maxSeqNr entries to migrate")
 
-      val groupSize = if (persistenceId.contains("forecast")) 10 else 5000
+      val groupSize = if (persistenceId.contains("forecast")) 16 else 5000
 
       val eventualInts: Future[Int] = events
         .grouped(groupSize)
         .fold(0) {
           case (counter, eventEnvelopes) =>
-            val seq = eventEnvelopes.map(eventEnvelope => {
+            val seq = eventEnvelopes.par.map(eventEnvelope => {
               val payload = eventEnvelope.event.asInstanceOf[AnyRef]
               val serializer = serialization.findSerializerFor(payload)
               val payloadBuilder = mf.PersistentPayload.newBuilder()
