@@ -8,11 +8,23 @@ import akka.serialization.SerializationExtension
 import akka.stream.ActorMaterializer
 import org.slf4j.LoggerFactory
 import scala.concurrent.ExecutionContextExecutor
+import scala.collection.JavaConversions._
+
 
 object Boot extends App with JournalMigration with SnapshotsMigration with ShowSummary with UsingPostgres with UsingDatabase with ActorConfig with RecreateTables {
   val log = LoggerFactory.getLogger(getClass)
 
   log.info(s"Starting DB migration ${config.getString("portcode")} at persistenceBaseDir '${config.getString("persistenceBaseDir")}'.")
+
+  log.info("**************************")
+  log.info("**************************")
+  log.info("************************** Envs:")
+  val environmentVars = System.getenv().toSeq.sortBy(_._1)
+  for ((k,v) <- environmentVars) println(s"key: $k, value: $v")
+
+  log.info("************************** Properties:")
+  val properties = System.getProperties.toSeq.sortBy(_._1)
+  for ((k,v) <- properties) println(s"key: $k, value: $v")
 
   implicit val system: ActorSystem = ActorSystem("default", actorConfig)
   implicit val mat: ActorMaterializer = ActorMaterializer()
