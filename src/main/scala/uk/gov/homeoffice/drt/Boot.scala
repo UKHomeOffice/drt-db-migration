@@ -8,6 +8,8 @@ import akka.serialization.SerializationExtension
 import akka.stream.ActorMaterializer
 import org.slf4j.LoggerFactory
 import scala.concurrent.ExecutionContextExecutor
+import scala.collection.JavaConversions._
+
 
 object Boot extends App with JournalMigration with SnapshotsMigration with ShowSummary with UsingPostgres with UsingDatabase with ActorConfig with RecreateTables {
   val log = LoggerFactory.getLogger(getClass)
