@@ -18,12 +18,13 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
 
   log.info("**************************")
   log.info("**************************")
-  log.info("**************************")
-  val environmentVars = System.getenv()
-  for ((k,v) <- environmentVars) log.info(s"key: $k, value: $v")
+  log.info("************************** Envs:")
+  val environmentVars = System.getenv().toSeq.sortBy(_._1)
+  for ((k,v) <- environmentVars) println(s"key: $k, value: $v")
 
-  val properties = System.getProperties
-  for ((k,v) <- properties) log.info(s"key: $k, value: $v")
+  log.info("************************** Properties:")
+  val properties = System.getProperties.toSeq.sortBy(_._1)
+  for ((k,v) <- properties) println(s"key: $k, value: $v")
 
   implicit val system: ActorSystem = ActorSystem("default", actorConfig)
   implicit val mat: ActorMaterializer = ActorMaterializer()
