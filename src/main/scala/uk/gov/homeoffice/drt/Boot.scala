@@ -14,6 +14,15 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
 
   log.info(s"Starting DB migration ${config.getString("portcode")} at persistenceBaseDir '${config.getString("persistenceBaseDir")}'.")
 
+  log.info("**************************")
+  log.info("**************************")
+  log.info("**************************")
+  val environmentVars = System.getenv()
+  for ((k,v) <- environmentVars) log.info(s"key: $k, value: $v")
+
+  val properties = System.getProperties
+  for ((k,v) <- properties) log.info(s"key: $k, value: $v")
+
   implicit val system: ActorSystem = ActorSystem("default", actorConfig)
   implicit val mat: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
