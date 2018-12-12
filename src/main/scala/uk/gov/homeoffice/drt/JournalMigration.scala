@@ -29,7 +29,7 @@ trait JournalMigration {
     readJournal.currentPersistenceIds().runWith(Sink.seq)
   }
 
-  def migratePersistenceIdFrom(persistenceId: String, startSequence: Long = 0L, batchSize: Int): Int = {
+  def migratePersistenceIdFrom(persistenceId: String, startSequence: Long = 0L, batchSize: Int): Long = {
     val endSequenceNumber = startSequence + batchSize - 1
     log.info(s"Migrating $persistenceId from $startSequence to $endSequenceNumber")
 
@@ -75,7 +75,7 @@ trait JournalMigration {
     })
   }
 
-  def migrateAll: Int = {
+  def migrateAll: Long = {
     val ids = Await.result(allJournalPersistentIds, Duration.Inf)
 
     log.info(s"persistence ids to be migrated:\n${ids.sorted.mkString("\n")}")
@@ -91,9 +91,8 @@ trait JournalMigration {
     migratedById.sum
   }
 
-  def recursiveMigration(pId: String, seqNr: Long, batchSize: Int = 5000, numProcessedAcc: Long): Int = {
-    val numProcessed = migratePersistenceIdFrom(pId, seqNr, batchSize)
-    log.info(s"numProcessed: $numProcessed")
-    if (numProcessed > 0) recursiveMigration(pId, seqNr + numProcessed, batchSize, numProcessedAcc + numProcessed) else numProcessed
+  def recursiveMigration(pId: String, seqNr: Long, batchSize: Int = 5000, numProcessedAcc: Long): Long = migratePersistenceIdFrom(pId, seqNr, batchSize) match {
+    case 0 => numProcessedAcc
+    case numProcessed => recursiveMigration(pId, seqNr + numProcessed, batchSize, numProcessedAcc + numProcessed)
   }
 }
