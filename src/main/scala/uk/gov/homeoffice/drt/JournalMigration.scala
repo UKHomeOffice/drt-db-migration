@@ -84,7 +84,7 @@ trait JournalMigration {
       id <- ids
       startSeq = getStartSequence(id)
     } yield {
-      val batchSize = if (id.contains("future")) 10 else 5000
+      val batchSize = if (id.contains("forecast")) 10 else 5000
       recursiveMigration(id, startSeq, batchSize)
     }
 
