@@ -98,8 +98,9 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
       log.info(s"$totalMigrated migrated.")
       closeDatasource()
       system.terminate()
-    case Some(ParsedArguments(Journal, Some(id), startSequence, endSequence)) =>
-      val totalMigrated = migratePersistenceIdFrom(id, startSequence.getOrElse(0L), endSequence.getOrElse(Long.MaxValue))
+    case Some(ParsedArguments(Journal, Some(id), startSequence, _)) =>
+      val batchSize = if (id.contains("forecast")) 10 else 5000
+      val totalMigrated = recursiveMigration(id, startSequence.getOrElse(1L), batchSize)//migratePersistenceIdFrom(id, startSequence.getOrElse(0L), endSequence.getOrElse(Long.MaxValue))
       log.info(s"$totalMigrated migrated.")
       closeDatasource()
       system.terminate()
