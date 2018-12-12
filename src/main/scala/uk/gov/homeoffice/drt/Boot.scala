@@ -20,11 +20,11 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
   log.info("**************************")
   log.info("************************** Envs:")
   val environmentVars = System.getenv().toSeq.sortBy(_._1)
-  for ((k,v) <- environmentVars) println(s"key: $k, value: $v")
+  for ((k, v) <- environmentVars) println(s"key: $k, value: $v")
 
   log.info("************************** Properties:")
   val properties = System.getProperties.toSeq.sortBy(_._1)
-  for ((k,v) <- properties) println(s"key: $k, value: $v")
+  for ((k, v) <- properties) println(s"key: $k, value: $v")
 
   implicit val system: ActorSystem = ActorSystem("default", actorConfig)
   implicit val mat: ActorMaterializer = ActorMaterializer()
@@ -100,8 +100,10 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
       system.terminate()
     case Some(ParsedArguments(Journal, Some(id), startSequence, _)) =>
       val batchSize = if (id.contains("forecast")) 10 else 5000
-      val totalMigrated = recursiveMigration(id, startSequence.getOrElse(1L), batchSize, 0)
-      log.info(s"$totalMigrated migrated.")
+      withDatasource { implicit dataSource =>
+        val totalMigrated = recursiveMigration(id, startSequence.getOrElse(1L), batchSize, 0)
+        log.info(s"$totalMigrated migrated.")
+      }
       closeDatasource()
       system.terminate()
     case Some(ParsedArguments(Snapshots, id, startSequence, endSequence)) =>
@@ -124,6 +126,7 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
       closeDatasource()
       sys.exit(0)
   }
+  
 }
 
 sealed trait Command
