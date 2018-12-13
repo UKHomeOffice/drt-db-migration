@@ -86,15 +86,25 @@ trait JournalMigration {
         startSeq = getStartSequence(id)
       } yield {
         val batchSize = if (id.contains("forecast")) 10 else 5000
-        recursiveMigration(id, startSeq, batchSize, 0)
+        migrateJournal(id, startSeq, batchSize)
       }
       migratedById.sum
     }
 
   }
 
-  def recursiveMigration(pId: String, seqNr: Long, batchSize: Int = 5000, numProcessedAcc: Long)(implicit dataSource: DataSource): Long = migratePersistenceIdFrom(pId, seqNr, batchSize) match {
-    case 0 => numProcessedAcc
-    case numProcessed => recursiveMigration(pId, seqNr + numProcessed, batchSize, numProcessedAcc + numProcessed)
+  def migrateJournal(pId: String, startSequenceNumber: Long, batchSize: Int = 5000)(implicit dataSource: DataSource): Long = {
+    var numProcessed = 0L
+    var totalNumProcessed = 0L
+    var sequenceNumber = startSequenceNumber
+
+    do {
+      numProcessed = migratePersistenceIdFrom(pId, sequenceNumber, batchSize)
+
+      totalNumProcessed = totalNumProcessed + numProcessed
+      sequenceNumber = sequenceNumber + numProcessed
+    } while (numProcessed > 0)
+
+    totalNumProcessed
   }
 }

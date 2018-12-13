@@ -91,7 +91,7 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
     case Some(ParsedArguments(Journal, Some(id), startSequence, _)) =>
       val batchSize = if (id.contains("forecast")) 10 else 5000
       withDatasource { implicit dataSource =>
-        val totalMigrated = recursiveMigration(id, startSequence.getOrElse(1L), batchSize, 0)
+        val totalMigrated = migrateJournal(id, startSequence.getOrElse(1L), batchSize)
         log.info(s"$totalMigrated migrated.")
       }
       closeDatasource()
