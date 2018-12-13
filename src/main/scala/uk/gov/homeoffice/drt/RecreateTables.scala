@@ -18,10 +18,12 @@ trait RecreateTables {
       |  deleted BOOLEAN DEFAULT FALSE,
       |  tags VARCHAR(255) DEFAULT NULL,
       |  message BYTEA NOT NULL,
+      |  from_migration BOOLEAN default FALSE,
       |  PRIMARY KEY(persistence_id, sequence_number)
       |);
     """.stripMargin
 
+  val journalFromMigrationIndex: String = "CREATE INDEX journal_from_migration_idx ON public.journal(from_migration);"
   val journalUniqueIndex: String = "CREATE UNIQUE INDEX journal_ordering_idx ON public.journal(ordering);"
 
   val snapshotSql: String =
@@ -31,11 +33,14 @@ trait RecreateTables {
       |  sequence_number BIGINT NOT NULL,
       |  created BIGINT NOT NULL,
       |  snapshot BYTEA NOT NULL,
+      |  from_migration BOOLEAN default FALSE,
       |  PRIMARY KEY(persistence_id, sequence_number)
       |);
     """.stripMargin
 
-  val sqlList: Seq[String] = dropTables ++ Seq(journalSql, journalUniqueIndex, snapshotSql)
+  val snapshotFromMigrationIndex: String = "CREATE INDEX snapshot_from_migration_idx ON public.snapshot(from_migration);"
+
+  val sqlList: Seq[String] = dropTables ++ Seq(journalSql, journalFromMigrationIndex, journalUniqueIndex, snapshotSql, snapshotFromMigrationIndex)
 
   def dropAndRecreateTables(): Unit = {
     withDatasource { implicit dataSource =>

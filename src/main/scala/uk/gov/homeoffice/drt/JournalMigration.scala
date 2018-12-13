@@ -24,7 +24,7 @@ trait JournalMigration {
   implicit val mat: ActorMaterializer
   implicit val executionContext: ExecutionContextExecutor
 
-  val columnNames = List("persistence_id", "sequence_number", "deleted", "tags", "message")
+  val columnNames = List("persistence_id", "sequence_number", "deleted", "tags", "message", "from_migration")
 
   lazy val allJournalPersistentIds: Future[immutable.Seq[String]] = {
     readJournal.currentPersistenceIds().runWith(Sink.seq)
@@ -52,7 +52,7 @@ trait JournalMigration {
         msgBuilder.setSequenceNr(eventEnvelope.sequenceNr)
         msgBuilder.setManifest(ms)
 
-        List(eventEnvelope.persistenceId, eventEnvelope.sequenceNr, false, null, msgBuilder.build().toByteArray)
+        List(eventEnvelope.persistenceId, eventEnvelope.sequenceNr, false, null, msgBuilder.build().toByteArray, true)
       }
       .runWith(Sink.seq)
     val recordsToInsert = Await.result(eventualRecordsToInsert, 24 hours)

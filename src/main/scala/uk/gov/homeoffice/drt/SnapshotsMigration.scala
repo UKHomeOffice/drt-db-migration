@@ -15,7 +15,7 @@ trait SnapshotsMigration {
 
   lazy val dirName = config.getString("snapshotsDir")
 
-  val snapshotColumnNames = List("persistence_id", "sequence_number", "created", "snapshot")
+  val snapshotColumnNames = List("persistence_id", "sequence_number", "created", "snapshot", "from_migration")
 
   lazy val allSnapshotPersistentIds = {
     val allFiles = new java.io.File(dirName).listFiles.filter(_.getName.startsWith("snapshot-"))
@@ -44,7 +44,7 @@ trait SnapshotsMigration {
             val inputStream = new FileInputStream(file)
             val bytes = try streamToBytes(inputStream) finally inputStream.close()
             log.info(s"Saving $sequenceNumber.")
-            dataToDatabase("snapshot", snapshotColumnNames, Seq(List(persistenceId, sequenceNumber, created, bytes)).toIterator)
+            dataToDatabase("snapshot", snapshotColumnNames, Seq(List(persistenceId, sequenceNumber, created, bytes, true)).toIterator)
           } else log.info(s"Skipping $sequenceNumber as we've already saved it.")
 
         }
