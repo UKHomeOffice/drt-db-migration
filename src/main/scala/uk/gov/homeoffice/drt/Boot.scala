@@ -74,6 +74,10 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
       .action((_, c) => c.copy(command = RecreateDB))
       .text(s"recreate the database tables")
 
+    cmd("cleanse")
+      .action((_, c) => c.copy(command = CleanseDB))
+      .text(s"cleanse non-migrated (test) data from the database")
+
     cmd("show")
       .action((_, c) => c.copy(command = Summary))
       .text("shows the state of play of the database and file system")
@@ -103,6 +107,10 @@ object Boot extends App with JournalMigration with SnapshotsMigration with ShowS
       dropAndRecreateTables()
       closeDatasource()
       system.terminate()
+    case Some(ParsedArguments(CleanseDB, _, _, _)) =>
+      cleanseTables()
+      closeDatasource()
+      system.terminate()
     case Some(ParsedArguments(Summary, _, _, _)) =>
       showSummary()
       closeDatasource()
@@ -130,6 +138,8 @@ case object Snapshots extends Command
 case object Summary extends Command
 
 case object RecreateDB extends Command
+
+case object CleanseDB extends Command
 
 case class ParsedArguments(command: Command = ShowUsage, id: Option[String] = None, startSequence: Option[Long] = None, endSequence: Option[Long] = None)
 

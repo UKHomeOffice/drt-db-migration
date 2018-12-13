@@ -40,17 +40,32 @@ trait RecreateTables {
 
   val snapshotFromMigrationIndex: String = "CREATE INDEX snapshot_from_migration_idx ON public.snapshot(from_migration);"
 
-  val sqlList: Seq[String] = dropTables ++ Seq(journalSql, journalFromMigrationIndex, journalUniqueIndex, snapshotSql, snapshotFromMigrationIndex)
+  val recreateTablesSql: Seq[String] = dropTables ++ Seq(journalSql, journalFromMigrationIndex, journalUniqueIndex, snapshotSql, snapshotFromMigrationIndex)
 
   def dropAndRecreateTables(): Unit = {
     withDatasource { implicit dataSource =>
-      for (sql <- sqlList) {
+      for (sql <- recreateTablesSql) {
         withPreparedStatement(sql, { implicit statement =>
           statement.execute
         })
       }
     }
 
+  }
+
+  val cleanseJournal: String = "DELETE FROM public.journal WHERE from_migration = FALSE;"
+  val cleanseSnapshot: String = "DELETE FROM public.snapshot WHERE from_migration = FALSE;"
+
+  val cleanseTablesSql: Seq[String] = Seq(cleanseJournal, cleanseSnapshot)
+
+  def cleanseTables(): Unit = {
+    withDatasource { implicit dataSource =>
+      for (sql <- cleanseTablesSql) {
+        withPreparedStatement(sql, { implicit statement =>
+          statement.execute
+        })
+      }
+    }
   }
 
 }
